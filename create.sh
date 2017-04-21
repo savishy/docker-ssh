@@ -25,7 +25,7 @@ usage() {
 ####
 # Parse commandline args
 ####
-while getopts "h?rp:" opt; do
+while getopts "h?rp:v:" opt; do
     case "$opt" in
     h|\?)
         usage
@@ -35,6 +35,7 @@ while getopts "h?rp:" opt; do
         ;;
     p)  port_list=$OPTARG
         ;;
+    v)  volume_mounts=$OPTARG
     esac
 done
 
@@ -70,9 +71,18 @@ for i in "${PORTS[@]}"; do
 done
 
 echo "-- Ports to Forward: $portForwards"
+
+IFS=',' read -ra VOLUMES <<< "$volume_mounts"
+volumeMounts=" "
+for i in "${VOLUMES[@]}"; do
+    volumeMounts="$volumeMounts -v $i "
+done
+
+echo "-- Volumes to Mount: $volumeMounts"
+
 echo "-- running Docker container"
 set -x
-docker run -m "2048m" --memory-swap "4096m" -d $portForwards --name $CONTAINER_NAME $IMG_NAME
+docker run -m "2048m" --memory-swap "4096m" -d $portForwards $volumeMounts --name $CONTAINER_NAME $IMG_NAME
 set +x
 CONTAINER_ID=`docker ps -aq -f "name=$CONTAINER_NAME"`
 ipAddr=`docker inspect -f {{.NetworkSettings.IPAddress}} $CONTAINER_NAME`
